@@ -29,6 +29,14 @@ def excel_to_csv(file_path, table):
     parse_data(filtered_list, table)
 
 
+def get_column_index(cell):
+    return cell.column
+
+
+def get_row_index(cell):
+    return cell.row
+
+
 def convert_to_csv(sheet_table, table):
     # Transform the sheet_table and save it to csv
     csv_table = []
@@ -41,10 +49,22 @@ def convert_to_csv(sheet_table, table):
                 # print("Value: ", value)
                 for item in value:
                     csv_table.append([item["Pointer"], item["Clarity"], item["Color"], item["Price"], item["Font"]])
-        # save_csv(csv_table, header, table)
+        save_csv(csv_table, header, table)
+    elif table == "2":
+        header = ["Pointer", "Clarity", "Cut", "Color", "Florescence", "Font", "Value", "Value_Color"]
+        for sheet in sheet_table:
+            for key, value in sheet.items():
+                # print("Key: ", key)
+                # print("Value: ", value)
+                for item in value:
+                    csv_table.append([item["Pointer"], item["Clarity"], item["Cut"], item["Color"], item["Florescence"],
+                                      item["Font"], item["Value"], item["Value_Color"]])
+        save_csv(csv_table, header, table)
 
 
 # Save the csv_table to csv file with table_{table}.csv with header and
+
+
 def save_csv(csv_table, header, table):
     np.savetxt(f"table_{table}.csv", csv_table, delimiter=",", header=",".join(header), fmt="%s", comments='')
     print("Data inserted successfully")
@@ -86,9 +106,88 @@ def parse_table_one(header, pointer, sheet, sheet_items):
                 sheet_items.append(row_dict)
 
 
+def get_clarity_index(cell, clarity_header_row_index, sheet):
+    sheet_clarity_header_row = sheet[clarity_header_row_index]  # get the column index of the cell
+    cell_column_index = get_column_index(cell) - 1
+    # print("Cell column index: ", cell_column_index)
+    if sheet_clarity_header_row[cell_column_index].value is not None:
+        # print("Cell Value If: ", sheet_clarity_header_row[cell_column_index].value)
+        return sheet_clarity_header_row[cell_column_index].value
+    else:
+        # print("Cell Value Else: ", sheet_clarity_header_row[cell_column_index].value)
+        while sheet_clarity_header_row[cell_column_index].value is None:
+            cell_column_index -= 1
+        return sheet_clarity_header_row[cell_column_index].value
+
+
+def get_cut_index(cell, cut_header_row_index, sheet):
+    sheet_cut_header_row = sheet[cut_header_row_index]  # get the column index of the cell
+    cell_column_index = get_column_index(cell) - 1
+    return sheet_cut_header_row[cell_column_index].value
+
+
+def get_florescence_index(cell, florescence_header_index, sheet):
+    cell_row_index = get_row_index(cell)
+    sheet_florescence_value = sheet.cell(row=cell_row_index, column=florescence_header_index[1]).value
+    return sheet_florescence_value
+
+
+def get_color_index(cell, color_header_index, sheet):
+    cell_row_index = get_row_index(cell)
+    sheet_color_value = sheet.cell(row=cell_row_index, column=color_header_index[1]).value
+    if sheet_color_value is not None:
+        return sheet_color_value
+    else:
+        while sheet_color_value is None:
+            cell_row_index -= 1
+            sheet_color_value = sheet.cell(row=cell_row_index, column=color_header_index[1]).value
+        return sheet_color_value
+
+
+def get_cell_color(cell):
+    argb_color = cell.fill.start_color.index
+    if argb_color == "FF000000":
+        return "black".upper()
+    elif argb_color == "FF00B050":
+        return "green".upper()
+    elif argb_color == "FFFF0000":
+        return "red".upper()
+    elif argb_color == "FF0000FF":
+        return "blue".upper()
+    else:
+        return "white".upper()
+
+
+def get_font_style(cell):
+    style = cell.font
+    font_style = ""
+    if style.b:
+        font_style = "bold".upper()
+    elif style.i:
+        font_style = "italic".upper()
+    else:
+        font_style = "normal".upper()
+    return font_style
+
+
+def get_pointer_index(cell, pointer_header_index, sheet):
+    sheet_pointer_header_row = sheet[pointer_header_index[0]]
+    cell_column_index = get_column_index(cell) - 1
+    # print("Cell column index: ", cell_column_index)
+    if sheet_pointer_header_row[cell_column_index].value is not None:
+        # print("Cell Value If: ", sheet_clarity_header_row[cell_column_index].value)
+        return sheet_pointer_header_row[cell_column_index].value
+    else:
+        # print("Cell Value Else: ", sheet_clarity_header_row[cell_column_index].value)
+        while sheet_pointer_header_row[cell_column_index].value is None:
+            cell_column_index -= 1
+        return sheet_pointer_header_row[cell_column_index].value
+
+
 def parse_table_two(header, pointer, sheet, sheet_items):
     # clarity_header is set of clarity headers
     pointer_header_index = []
+    pointer_header = ""
     clarity_header = set()
     clarity_header_row_index = 0
     cut_header = set()
@@ -114,6 +213,7 @@ def parse_table_two(header, pointer, sheet, sheet_items):
                 if cell.value is None:
                     continue
                 pointer_header_index.append(row[0].row)
+                pointer_header = sheet.cell(row=row[0].row, column=2).value
         else:
             pass
 
@@ -148,13 +248,30 @@ def parse_table_two(header, pointer, sheet, sheet_items):
 
     for row in sheet.iter_rows(min_row=color_header_index[0] + 1, max_row=pointer_header_index[1] - 1,
                                min_col=3, values_only=False):
-        clarity_index = ""
+
         for cell in row:
-            print("Cell: ", cell.value)
+            pointer_index = get_pointer_index(cell, pointer_header_index, sheet)
+            clarity_index = get_clarity_index(cell, clarity_header_row_index, sheet)
+            cut_index = get_cut_index(cell, cut_header_row_index, sheet)
+            florescence_index = get_florescence_index(cell, florescence_header_index, sheet)
+            color_index = get_color_index(cell, color_header_index, sheet)
+            cell_color = get_cell_color(cell)
+            font_style = get_font_style(cell)
 
-
-    print("Clarity Header: ", clarity_header, clarity_header_row_index)
-    print("Cut Header: ", cut_header, cut_header_row_index)
+            row_dict = {
+                "Pointer": pointer_index,
+                "Clarity": clarity_index,
+                "Cut": cut_index,
+                "Color": color_index,
+                "Florescence": florescence_index,
+                "Font": font_style,
+                "Value": cell.value,
+                "Value_Color": cell_color
+            }
+            print("Row", row_dict)
+            sheet_items.append(row_dict)
+    # print("Clarity Header: ", clarity_header, clarity_header_row_index)
+    # print("Cut Header: ", cut_header, cut_header_row_index)
     print("Pointer Header: ", pointer_header_index)
 
 
