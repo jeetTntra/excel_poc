@@ -25,7 +25,7 @@ def excel_to_csv(file_path, table):
 
     print("Length of the filtered_list: ", len(filtered_list))
     # only keep 1 sheet for testing
-    # filtered_list = filtered_list[0:1]
+    filtered_list = filtered_list[0:1]
     parse_data(filtered_list, table)
 
 
@@ -58,9 +58,9 @@ def parse_table_one(header, pointer, sheet, sheet_items):
         pointer = header[0]
         header = header[1:]
     for row in sheet.iter_rows(min_row=2, values_only=False):
-        # if row[0].value is None:
-        #     print("Empty row found", row[0].row)
-        #     break
+        if row[0].value is None:
+            print("Empty row found", row[0].row)
+            break
         for cell in row[1:]:
             # skip the empty cells
             if cell.value is None:
@@ -68,7 +68,6 @@ def parse_table_one(header, pointer, sheet, sheet_items):
             if cell is not None:
                 text = cell
                 style = sheet.cell(row=cell.row, column=cell.column).font
-                print("Style", style)
                 font_style = ""
                 if style.b:
                     font_style = "bold".upper()
@@ -89,10 +88,12 @@ def parse_table_one(header, pointer, sheet, sheet_items):
 
 def parse_table_two(header, pointer, sheet, sheet_items):
     # clarity_header is set of clarity headers
+    pointer_header_index = []
     clarity_header = set()
+    clarity_header_row_index = 0
     cut_header = set()
-    first_row_number = 0
-    florescence_header = ["Faint", "Medium", "Strong", "Very Strong"]
+    cut_header_row_index = 0
+    florescence_header = ["None", "Faint", "Medium", "Strong"]
     # the dictionary to store the table 2 is like this
     # {
     #     "Pointer": 0.20 To 0.229
@@ -104,44 +105,56 @@ def parse_table_two(header, pointer, sheet, sheet_items):
     #     "Font": "BOLD"
     #     "Value_Color": "Red"
     # }
-    for row in sheet.iter_rows(min_row=2, values_only=False):
+    for row in sheet.iter_rows(min_row=1, values_only=False):
         # Loop through the first cell of the row is "Range =>"
         if row[0].value == "Range =>":
             for cell in row[1:]:  # skip the first cell of the row and loop through the rest of the cells in the row
                 if cell.value is None:
                     continue
-                header.append(cell.value)
-            first_row_number = row[0].row
-            break
-        elif row[0].value == "Clarity =>":
+                pointer_header_index.append(row[0].row)
+        else:
+            pass
+
+    # Loop through the sheet and get the data
+    for row in sheet.iter_rows(min_row=pointer_header_index[0], max_row=pointer_header_index[1], values_only=False):
+        color_header_index = []
+        florescence_header_index = []
+        if row[0].value == "Clarity =>":
             for cell in row[1:]:
                 if cell.value is None:
                     continue
                 clarity_header.add(cell.value)
+                clarity_header_row_index = row[0].row
         elif row[0].value == "Cut =>":
             for cell in row[1:]:
                 if cell.value is None:
                     continue
                 cut_header.add(cell.value)
+                cut_header_row_index = row[0].row
+        elif row[0].value == "Color":
+            for cell in row:
+                if cell.value is None:
+                    continue
+                if cell.value == "Color":
+                    color_header_index.append(row[0].row)
+                    color_header_index.append(cell.column)
+                elif cell.value == "Florescence":
+                    florescence_header_index.append(row[0].row)
+                    florescence_header_index.append(cell.column)
+            print("Color header index: ", color_header_index)
+            print("Florescence header index: ", florescence_header_index)
         else:
-            print("Done parsing the header")
+            pass
 
-    # Loop through the sheet and get the data
-    for row in sheet.iter_rows(min_row=3, values_only=False):
-        if row[0].value is None:
-            print("Empty row found", row[0].row)
-            break
-        for cell in row[1:]:
-            # skip the empty cells
-            if cell.value is None:
-                continue
-            if cell is not None:
-                # print("Cell: ", cell)
+        for cell in row:
+            print("#" * 50)
+            print(cell.value, end=" ")
+            print("#" * 50)
 
-    # print("Header: ", header)
-    # print("Clarity Header: ", clarity_header)
-    # print("Cut Header: ", cut_header)
-    # print("First row number: ", first_row_number)
+    print("Header: ", header)
+    print("Clarity Header: ", clarity_header, clarity_header_row_index)
+    print("Cut Header: ", cut_header, cut_header_row_index)
+    print("Pointer Header: ", pointer_header_index)
 
 
 def parse_data(list, table):
