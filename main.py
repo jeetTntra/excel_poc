@@ -93,6 +93,8 @@ def parse_table_two(header, pointer, sheet, sheet_items):
     clarity_header_row_index = 0
     cut_header = set()
     cut_header_row_index = 0
+    color_header_index = []
+    florescence_header_index = []
     florescence_header = ["None", "Faint", "Medium", "Strong"]
     # the dictionary to store the table 2 is like this
     # {
@@ -117,8 +119,6 @@ def parse_table_two(header, pointer, sheet, sheet_items):
 
     # Loop through the sheet and get the data
     for row in sheet.iter_rows(min_row=pointer_header_index[0], max_row=pointer_header_index[1] - 1, values_only=False):
-        color_header_index = []
-        florescence_header_index = []
         if row[0].value == "Clarity =>":
             for cell in row[1:]:
                 if cell.value is None:
@@ -146,10 +146,13 @@ def parse_table_two(header, pointer, sheet, sheet_items):
         else:
             pass
 
+    for row in sheet.iter_rows(min_row=color_header_index[0] + 1, max_row=pointer_header_index[1] - 1,
+                               min_col=3, values_only=False):
+        clarity_index = ""
         for cell in row:
-            print(cell.value)
+            print("Cell: ", cell.value)
 
-    print("Header: ", header)
+
     print("Clarity Header: ", clarity_header, clarity_header_row_index)
     print("Cut Header: ", cut_header, cut_header_row_index)
     print("Pointer Header: ", pointer_header_index)
