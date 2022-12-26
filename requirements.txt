@@ -1,0 +1,3 @@
+# install panda and numpy
+pip install panda
+pip install numpy
