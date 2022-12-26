@@ -40,13 +40,15 @@ def convert_to_csv(sheet_table, table):
                 # print("Key: ", key)
                 # print("Value: ", value)
                 for item in value:
-                    csv_table.append([item["Pointer"], item["Clarity"], item["Color"], item["Price"], item["Font"]])
+                    csv_table.append(
+                        [item["Pointer"], item["Clarity"], item["Color"], item["Price"], item["Font"]])
         # save_csv(csv_table, header, table)
 
 
 # Save the csv_table to csv file with table_{table}.csv with header and
 def save_csv(csv_table, header, table):
-    np.savetxt(f"table_{table}.csv", csv_table, delimiter=",", header=",".join(header), fmt="%s", comments='')
+    np.savetxt(f"table_{table}.csv", csv_table, delimiter=",",
+               header=",".join(header), fmt="%s", comments='')
     print("Data inserted successfully")
 
 
@@ -90,10 +92,12 @@ def parse_table_two(header, pointer, sheet, sheet_items):
     # clarity_header is set of clarity headers
     pointer_header_index = []
     clarity_header = set()
-    clarity_header_row_index = 0
+    clarity_header_row_index = []
     cut_header = set()
-    cut_header_row_index = 0
-    florescence_header = ["None", "Faint", "Medium", "Strong"]
+    cut_header_row_index = []
+    # florescence_header = ["None", "Faint", "Medium", "Strong"]
+    color_header_index = []
+    florescence_header_index = []
     # the dictionary to store the table 2 is like this
     # {
     #     "Pointer": 0.20 To 0.229
@@ -108,51 +112,79 @@ def parse_table_two(header, pointer, sheet, sheet_items):
     for row in sheet.iter_rows(min_row=1, values_only=False):
         # Loop through the first cell of the row is "Range =>"
         if row[0].value == "Range =>":
-            for cell in row[1:]:  # skip the first cell of the row and loop through the rest of the cells in the row
+            # skip the first cell of the row and loop through the rest of the cells in the row
+            for cell in row[1:]:
+                # this is to find the Pointer in our dictionary
                 if cell.value is None:
                     continue
                 pointer_header_index.append(row[0].row)
-        else:
-            pass
-
-    # Loop through the sheet and get the data
-    for row in sheet.iter_rows(min_row=pointer_header_index[0], max_row=pointer_header_index[1] - 1, values_only=False):
-        color_header_index = []
-        florescence_header_index = []
-        if row[0].value == "Clarity =>":
+        elif row[0].value == "Clarity =>":
             for cell in row[1:]:
                 if cell.value is None:
                     continue
-                clarity_header.add(cell.value)
-                clarity_header_row_index = row[0].row
+                clarity_header_row_index.append(row[0].row)
         elif row[0].value == "Cut =>":
             for cell in row[1:]:
                 if cell.value is None:
                     continue
-                cut_header.add(cell.value)
-                cut_header_row_index = row[0].row
+                cut_header_row_index.append(row[0].row)
         elif row[0].value == "Color":
-            for cell in row:
+            for cell in row[1:]:
                 if cell.value is None:
                     continue
-                if cell.value == "Color":
-                    color_header_index.append(row[0].row)
-                    color_header_index.append(cell.column)
-                elif cell.value == "Florescence":
-                    florescence_header_index.append(row[0].row)
-                    florescence_header_index.append(cell.column)
-            print("Color header index: ", color_header_index)
-            print("Florescence header index: ", florescence_header_index)
+                color_header_index.append(row[0].row)
+
         else:
             pass
+    cut_header_row_index = list(set(cut_header_row_index))
+    clarity_header_row_index = list(set(clarity_header_row_index))
+    color_header_index = list(set(color_header_index))
 
+    # Loop through the sheet and get the data
+    for row in sheet.iter_rows(min_row=color_header_index[0]+1, max_row=pointer_header_index[1] - 1, values_only=False, min_col=3):
+        row_dict = dict()
         for cell in row:
-            print(cell.value)
+            row_dict['Pointer'] = sheet.cell(pointer_header_index[0], 3).value
+
+            temp = cell.col_idx
+
+            while sheet.cell(clarity_header_row_index[0], temp).value is None:
+                temp -= 1
+            row_dict["Clarity"] = sheet.cell(
+                clarity_header_row_index[0], temp).value
+
+            temp = cell.col_idx
+            row_dict["Cut"] = sheet.cell(cut_header_row_index[0], temp).value
+
+            temp = cell.row
+
+            while sheet.cell(temp, 1).value is None:
+                temp -= 1
+            row_dict["Color"] = sheet.cell(temp, 1).value
+
+            row_dict['Value'] = cell.value
+
+            style = sheet.cell(row=cell.row, column=cell.column).font
+            font_style = ""
+            if style.b:
+                font_style = "bold".upper()
+            elif style.i:
+                font_style = "italic".upper()
+            else:
+                font_style = "normal".upper()
+
+            row_dict["row"] = cell.row
+            row_dict["col"] = cell.col_idx
+            row_dict["(row,col)"] = sheet.cell(cell.row, cell.col_idx).value
+            row_dict["Fluorescence"] = sheet.cell(cell.row, 2).value
+            row_dict["Font"] = font_style
+            sheet_items.append(row_dict)
 
     print("Header: ", header)
     print("Clarity Header: ", clarity_header, clarity_header_row_index)
     print("Cut Header: ", cut_header, cut_header_row_index)
     print("Pointer Header: ", pointer_header_index)
+    print("Color header", color_header_index)
 
 
 def parse_data(list, table):
