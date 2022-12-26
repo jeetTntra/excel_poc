@@ -116,7 +116,7 @@ def parse_table_two(header, pointer, sheet, sheet_items):
             pass
 
     # Loop through the sheet and get the data
-    for row in sheet.iter_rows(min_row=pointer_header_index[0], max_row=pointer_header_index[1], values_only=False):
+    for row in sheet.iter_rows(min_row=pointer_header_index[0], max_row=pointer_header_index[1] - 1, values_only=False):
         color_header_index = []
         florescence_header_index = []
         if row[0].value == "Clarity =>":
@@ -147,9 +147,7 @@ def parse_table_two(header, pointer, sheet, sheet_items):
             pass
 
         for cell in row:
-            print("#" * 50)
-            print(cell.value, end=" ")
-            print("#" * 50)
+            print(cell.value)
 
     print("Header: ", header)
     print("Clarity Header: ", clarity_header, clarity_header_row_index)
