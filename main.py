@@ -42,7 +42,16 @@ def convert_to_csv(sheet_table, table):
                 for item in value:
                     csv_table.append(
                         [item["Pointer"], item["Clarity"], item["Color"], item["Price"], item["Font"]])
-        # save_csv(csv_table, header, table)
+    elif table == "2":
+        header = ["Pointer", "Clarity", "Cut", "Color", "Florescence", "Font", "Value", "Value_Color"]
+        for sheet in sheet_table:
+            for key, value in sheet.items():
+                # print("Key: ", key)
+                # print("Value: ", value)
+                for item in value:
+                    csv_table.append([item["Pointer"], item["Clarity"], item["Cut"], item["Color"], item["Florescence"],
+                                      item["Font"], item["Value"], item["Value_Color"]])
+        save_csv(csv_table, header, table)
 
 
 # Save the csv_table to csv file with table_{table}.csv with header and
@@ -173,11 +182,9 @@ def parse_table_two(header, pointer, sheet, sheet_items):
             else:
                 font_style = "normal".upper()
 
-            row_dict["row"] = cell.row
-            row_dict["col"] = cell.col_idx
-            row_dict["(row,col)"] = sheet.cell(cell.row, cell.col_idx).value
-            row_dict["Fluorescence"] = sheet.cell(cell.row, 2).value
+            row_dict["Florescence"] = sheet.cell(cell.row, 2).value
             row_dict["Font"] = font_style
+            row_dict["Value_Color"] = get_cell_color(cell)
             sheet_items.append(row_dict)
 
     print("Header: ", header)
@@ -186,6 +193,18 @@ def parse_table_two(header, pointer, sheet, sheet_items):
     print("Pointer Header: ", pointer_header_index)
     print("Color header", color_header_index)
 
+def get_cell_color(cell):
+    argb_color = cell.fill.start_color.index
+    if argb_color == "FF000000":
+        return "black".upper()
+    elif argb_color == "FF00B050":
+        return "green".upper()
+    elif argb_color == "FFFF0000":
+        return "red".upper()
+    elif argb_color == "FF0000FF":
+        return "blue".upper()
+    else:
+        return "white".upper()
 
 def parse_data(list, table):
     sheet_table = []
